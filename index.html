@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>摇投资游戏</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .dice {
+            width: 60px;
+            height: 60px;
+            background-color: #fff;
+            border: 2px solid #000;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 auto;
+        }
+        .roll {
+            animation: rollDice 0.5s ease-in-out 3;
+        }
+        @keyframes rollDice {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .win-effect {
+            font-size: 1.5rem;
+            color: #10b981;
+            display: inline-block;
+            animation: winPulse 0.5s ease-in-out 2;
+        }
+        .lose-effect {
+            font-size: 1.5rem;
+            color: #ef4444;
+            display: inline-block;
+            animation: loseShake 0.3s ease-in-out 2;
+        }
+        @keyframes winPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        @keyframes loseShake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+        <h1 class="text-2xl font-bold text-center mb-4">摇骰子游戏</h1>
+        <p class="text-center mb-4">当前资金: <span id="balance">1000</span> 元</p>
+        <div class="mb-4">
+            <label for="betAmount" class="block text-sm font-medium text-gray-700">下注金额:</label>
+            <input type="number" id="betAmount" min="1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="请输入下注金额">
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">猜单双:</label>
+            <div class="flex justify-center space-x-4">
+                <button onclick="setGuess('odd')" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300">单</button>
+                <button onclick="setGuess('even')" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300">双</button>
+            </div>
+        </div>
+        <button onclick="playGame()" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700">下注</button>
+        <div id="dice" class="dice mt-4 hidden"></div>
+        <p id="result" class="mt-4 text-center text-sm text-gray-600"></p>
+    </div>
+
+    <script>
+        let balance = 1000;
+        let currentGuess = null;
+        const oddNumbers = [1, 3, 5];
+        const evenNumbers = [2, 4, 6];
+
+        function setGuess(guess) {
+            currentGuess = guess;
+            document.querySelectorAll('.flex button').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            event.target.classList.remove('bg-gray-200', 'text-gray-700');
+            event.target.classList.add('bg-indigo-600', 'text-white');
+        }
+
+        function playGame() {
+            const betAmount = parseFloat(document.getElementById('betAmount').value);
+            const resultElement = document.getElementById('result');
+            const balanceElement = document.getElementById('balance');
+            const diceElement = document.getElementById('dice');
+
+            // 输入验证
+            if (!betAmount || betAmount <= 0) {
+                resultElement.textContent = '请输入有效的下注金额！';
+                return;
+            }
+            if (betAmount > balance) {
+                resultElement.textContent = '余额不足！';
+                return;
+            }
+            if (!currentGuess) {
+                resultElement.textContent = '请选择单或双！';
+                return;
+            }
+
+            // 显示骰子并触发动画
+            diceElement.classList.remove('hidden');
+            diceElement.classList.add('roll');
+            diceElement.textContent = '?';
+
+            // 模拟摇骰子，根据金额和选择确定点数
+            setTimeout(() => {
+                let dice;
+                if (betAmount < 10) {
+                    // 下注 < 10 元：单→奇数，双→偶数
+                    dice = currentGuess === 'odd' 
+                        ? oddNumbers[Math.floor(Math.random() * oddNumbers.length)]
+                        : evenNumbers[Math.floor(Math.random() * evenNumbers.length)];
+                } else {
+                    // 下注 >= 10 元：单→偶数，双→奇数
+                    dice = currentGuess === 'odd' 
+                        ? evenNumbers[Math.floor(Math.random() * evenNumbers.length)]
+                        : oddNumbers[Math.floor(Math.random() * oddNumbers.length)];
+                }
+
+                diceElement.textContent = dice;
+                diceElement.classList.remove('roll');
+
+                const isEven = dice % 2 === 0;
+                const correctGuess = (currentGuess === 'even' && isEven) || (currentGuess === 'odd' && !isEven);
+                let win = correctGuess;
+
+                // 更新余额并显示结果
+                if (win) {
+                    balance += betAmount;
+                    resultElement.innerHTML = `骰子点数: ${dice} (${isEven ? '双' : '单'})，你<span class="win-effect">赢了</span>！获得 ${betAmount} 元。 (你的猜测: ${currentGuess === 'odd' ? '单' : '双'}，${correctGuess ? '正确' : '错误'})`;
+                } else {
+                    balance -= betAmount;
+                    resultElement.innerHTML = `骰子点数: ${dice} (${isEven ? '双' : '单'})，你<span class="lose-effect">输了</span>！失去 ${betAmount} 元。 (你的猜测: ${currentGuess === 'odd' ? '单' : '双'}，${correctGuess ? '正确' : '错误'})`;
+                }
+
+                // 更新余额显示
+                balanceElement.textContent = balance.toFixed(2);
+
+                // 检查游戏是否结束
+                if (balance <= 0) {
+                    resultElement.textContent = '游戏结束！你的资金已用尽。';
+                    document.querySelector('button[onclick="playGame()"]').disabled = true;
+                }
+            }, 1000); // 动画持续1.5秒
+        }
+    </script>
+</body>
+</html>
