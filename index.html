@@ -3,21 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>摇投资游戏</title>
+    <title>摇骰子游戏</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .dice {
-            width: 60px;
-            height: 60px;
-            background-color: #fff;
-            border: 2px solid #000;
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            font-weight: bold;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(145deg, #f0f0f0, #ffffff);
+            border: 2px solid #333;
+            border-radius: 12px;
+            box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3);
+            position: relative;
             margin: 0 auto;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            background-color: #000;
+            border-radius: 50%;
+            position: absolute;
         }
         .roll {
             animation: rollDice 0.5s ease-in-out 3;
@@ -51,6 +55,28 @@
             75% { transform: translateX(-5px); }
             100% { transform: translateX(0); }
         }
+        /* 骰子点数定位 */
+        .dice-1 .dot:nth-child(1) { top: 29px; left: 29px; }
+        .dice-2 .dot:nth-child(1) { top: 12px; left: 12px; }
+        .dice-2 .dot:nth-child(2) { top: 46px; left: 46px; }
+        .dice-3 .dot:nth-child(1) { top: 12px; left: 12px; }
+        .dice-3 .dot:nth-child(2) { top: 29px; left: 29px; }
+        .dice-3 .dot:nth-child(3) { top: 46px; left: 46px; }
+        .dice-4 .dot:nth-child(1) { top: 12px; left: 12px; }
+        .dice-4 .dot:nth-child(2) { top: 12px; left: 46px; }
+        .dice-4 .dot:nth-child(3) { top: 46px; left: 12px; }
+        .dice-4 .dot:nth-child(4) { top: 46px; left: 46px; }
+        .dice-5 .dot:nth-child(1) { top: 12px; left: 12px; }
+        .dice-5 .dot:nth-child(2) { top: 12px; left: 46px; }
+        .dice-5 .dot:nth-child(3) { top: 29px; left: 29px; }
+        .dice-5 .dot:nth-child(4) { top: 46px; left: 12px; }
+        .dice-5 .dot:nth-child(5) { top: 46px; left: 46px; }
+        .dice-6 .dot:nth-child(1) { top: 12px; left: 12px; }
+        .dice-6 .dot:nth-child(2) { top: 12px; left: 46px; }
+        .dice-6 .dot:nth-child(3) { top: 29px; left: 12px; }
+        .dice-6 .dot:nth-child(4) { top: 29px; left: 46px; }
+        .dice-6 .dot:nth-child(5) { top: 46px; left: 12px; }
+        .dice-6 .dot:nth-child(6) { top: 46px; left: 46px; }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
@@ -58,14 +84,19 @@
         <h1 class="text-2xl font-bold text-center mb-4">摇骰子游戏</h1>
         <p class="text-center mb-4">当前资金: <span id="balance">1000</span> 元</p>
         <div class="mb-4">
-            <label for="betAmount" class="block text-sm font-medium text-gray-700">下注金额:</label>
-            <input type="number" id="betAmount" min="1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="请输入下注金额">
+            <label class="block text-sm font-medium text-gray-700 mb-2">下注金额:</label>
+            <div class="flex justify-center space-x-2">
+                <button onclick="setBetAmount(1)" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none">1 元</button>
+                <button onclick="setBetAmount(5)" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none">5 元</button>
+                <button onclick="setBetAmount(10)" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none">10 元</button>
+                <button onclick="setBetAmount(50)" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none">50 元</button>
+            </div>
         </div>
         <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-2">猜单双:</label>
             <div class="flex justify-center space-x-4">
-                <button onclick="setGuess('odd')" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300">单</button>
-                <button onclick="setGuess('even')" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300">双</button>
+                <button onclick="setGuess('odd')" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none">单</button>
+                <button onclick="setGuess('even')" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none">双</button>
             </div>
         </div>
         <button onclick="playGame()" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700">下注</button>
@@ -76,28 +107,39 @@
     <script>
         let balance = 1000;
         let currentGuess = null;
+        let currentBetAmount = null;
         const oddNumbers = [1, 3, 5];
         const evenNumbers = [2, 4, 6];
 
         function setGuess(guess) {
             currentGuess = guess;
-            document.querySelectorAll('.flex button').forEach(btn => {
-                btn.classList.remove('bg-indigo-600', 'text-white');
+            document.querySelectorAll('.flex button:not([onclick*="setBetAmount"])').forEach(btn => {
+                btn.classList.remove('bg-blue-700', 'text-white');
                 btn.classList.add('bg-gray-200', 'text-gray-700');
             });
             event.target.classList.remove('bg-gray-200', 'text-gray-700');
-            event.target.classList.add('bg-indigo-600', 'text-white');
+            event.target.classList.add('bg-blue-700', 'text-white');
+        }
+
+        function setBetAmount(amount) {
+            currentBetAmount = amount;
+            document.querySelectorAll('.flex button[onclick*="setBetAmount"]').forEach(btn => {
+                btn.classList.remove('bg-blue-700', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            event.target.classList.remove('bg-gray-200', 'text-gray-700');
+            event.target.classList.add('bg-blue-700', 'text-white');
         }
 
         function playGame() {
-            const betAmount = parseFloat(document.getElementById('betAmount').value);
+            const betAmount = currentBetAmount;
             const resultElement = document.getElementById('result');
             const balanceElement = document.getElementById('balance');
             const diceElement = document.getElementById('dice');
 
             // 输入验证
-            if (!betAmount || betAmount <= 0) {
-                resultElement.textContent = '请输入有效的下注金额！';
+            if (!betAmount) {
+                resultElement.textContent = '请选择下注金额！';
                 return;
             }
             if (betAmount > balance) {
@@ -110,9 +152,9 @@
             }
 
             // 显示骰子并触发动画
-            diceElement.classList.remove('hidden');
+            diceElement.classList.remove('hidden', 'dice-1', 'dice-2', 'dice-3', 'dice-4', 'dice-5', 'dice-6');
             diceElement.classList.add('roll');
-            diceElement.textContent = '?';
+            diceElement.innerHTML = '';
 
             // 模拟摇骰子，根据金额和选择确定点数
             setTimeout(() => {
@@ -129,8 +171,14 @@
                         : oddNumbers[Math.floor(Math.random() * oddNumbers.length)];
                 }
 
-                diceElement.textContent = dice;
+                // 显示骰子点数图案
                 diceElement.classList.remove('roll');
+                diceElement.classList.add(`dice-${dice}`);
+                for (let i = 0; i < dice; i++) {
+                    const dot = document.createElement('div');
+                    dot.classList.add('dot');
+                    diceElement.appendChild(dot);
+                }
 
                 const isEven = dice % 2 === 0;
                 const correctGuess = (currentGuess === 'even' && isEven) || (currentGuess === 'odd' && !isEven);
